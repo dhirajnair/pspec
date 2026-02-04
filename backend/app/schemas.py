@@ -42,8 +42,29 @@ class PybpAdvisory(BaseModel):
     severity: str = Field(..., description="One of: info, advisory, warning")
 
 
+class Location(BaseModel):
+    """Location of a static analysis finding."""
+
+    line: int = Field(..., ge=1, description="1-based line number")
+    column: Optional[int] = Field(None, ge=0)
+    function: Optional[str] = None
+    class_name: Optional[str] = None
+
+
+class StaticAnalysisFinding(BaseModel):
+    """Single finding from advanced static analysis (types, dataflow, errors, security, metrics, insights)."""
+
+    domain: str = Field(..., description="Analysis domain e.g. types, dataflow, security")
+    rule_id: str = Field(..., description="Stable rule id")
+    title: str = Field(..., description="Short title")
+    location: Location = Field(..., description="Where the finding applies")
+    severity: str = Field(..., description="violation | warning | advisory")
+    explanation: str = Field(..., description="What is observed")
+    suggestion: str = Field(..., description="How to improve")
+
+
 class CheckResponse(BaseModel):
-    """Response from POST /api/check. PEP 8 issues + optional PYBP advisories."""
+    """Response from POST /api/check. PEP 8 issues + optional PYBP advisories + optional static analysis findings."""
 
     ok: bool = Field(..., description="True if validation ran successfully")
     pep8_date: str = Field(..., description="PEP 8 revision date for UI")
@@ -51,4 +72,8 @@ class CheckResponse(BaseModel):
     pep8_revision: str = Field(..., description="Revision identifier for reports")
     issues: List[Issue] = Field(default_factory=list, description="PEP 8 violations, sorted by line, then column")
     advisories: List[PybpAdvisory] = Field(default_factory=list, description="PYBP best-practice advisories when requested")
+    findings: List[StaticAnalysisFinding] = Field(
+        default_factory=list,
+        description="Advanced static analysis findings (types, dataflow, errors, security, metrics, insights), ordered by domain authority",
+    )
     error: Optional[str] = Field(None, description="Backend error message when ok is False")

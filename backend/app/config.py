@@ -25,6 +25,15 @@ class Settings(BaseSettings):
     pep8_ignore: str = ""
     # PYBP: enable best-practice advisories by default (can override per request).
     pybp_enabled_by_default: bool = True
+    # Advanced static analysis (additive; each can override per request).
+    enable_pep8: bool = True
+    enable_pybp: bool = True
+    enable_types: bool = True
+    enable_dataflow: bool = True
+    enable_errors: bool = True
+    enable_security: bool = True
+    enable_metrics: bool = True
+    enable_insights: bool = True
 
     @property
     def cors_origins_list(self) -> List[str]:

@@ -91,6 +91,24 @@ python scripts/detect_pep8_changes.py
 
 The script fetches the official PEP 8 page, hashes each tracked section, and compares to `data/pep8_baseline.json`. If a section changed, it prints which section and which **rule codes** are affected (so you can update `app/pep8_map.py`). First time: run with `--accept` to create the baseline. After reviewing any reported change and updating the app, run again with `--accept` to refresh the baseline. Optionally run the script in CI (without `--accept`) to flag when PEP 8 has changed.
 
+## Analysis engines
+
+pspec runs several **independent** static analysis engines on your code. Output order is fixed: PEP 8 → PYBP → Correctness & Safety → Metrics & Insights. No engine alters or suppresses another’s results.
+
+| Engine | Purpose | Output |
+|--------|---------|--------|
+| **PEP 8** | Style and layout (normative). | Violations with code, line, PEP 8 quote, suggestion. |
+| **PYBP** | Best-practice advisories (function design, control flow, error handling, etc.). | Advisories with category, severity, authority, citation. |
+| **Type semantics** | Lightweight type awareness (no mypy). | Advisories for `Any` overuse, optional/return mismatches. |
+| **Data-flow** | Snippet-local variable lifecycles. | Advisories for shadowing, redundant assignment. |
+| **Error & exception** | Exception-handling patterns. | Warnings/advisories for bare except, silent catch, broad catch. |
+| **Security** | Basic security smells. | Advisories for `eval`/`exec`, pickle, shell execution, hardcoded credentials. |
+| **Metrics** | Complexity and size (report only). | Per-function cyclomatic complexity and nesting depth. |
+| **Insights** | Synthesis of other findings. | High-level advisories (e.g. elevated risk, complexity context). |
+
+- **PEP 8** and **PYBP** can be toggled in the UI or via request body (`enable_pep8`, `pybp_enabled`).
+- **Advanced analysis** (types, dataflow, errors, security, metrics, insights) can be turned on/off together in the UI (“Advanced analysis” checkbox) or per engine via request body (`enable_types`, `enable_dataflow`, `enable_errors`, `enable_security`, `enable_metrics`, `enable_insights`). Backend defaults for all are `true`.
+
 ## PYBP (Python Best Practices)
 
 PYBP runs in parallel to PEP 8 on the same code: it produces **advisories only** (no errors), with severity `info`, `advisory`, or `warning`. Rules are cited (e.g. Clean Code, Python Docs, PEP 20).
@@ -110,8 +128,8 @@ PYBP runs in parallel to PEP 8 on the same code: it produces **advisories only**
 
 ## Project layout
 
-- `backend/` – FastAPI + pycodestyle; `POST /api/check` (PEP 8 + optional PYBP); `app/pybp/` for PYBP engine and rules; `scripts/detect_pep8_changes.py` for PEP 8 change detection.
-- `frontend/` – Vite + React; code editor (CodeMirror), results panel (PEP 8 and PYBP sections), PYBP toggle, loading/error/empty states.
+- `backend/` – FastAPI + pycodestyle; `POST /api/check` (PEP 8, PYBP, and advanced static analysis); `app/pybp/` for PYBP; `app/analysis/` for type, dataflow, error, security, metrics, and insight engines; `scripts/detect_pep8_changes.py` for PEP 8 change detection.
+- `frontend/` – Vite + React; code editor (CodeMirror), results panel (PEP 8, PYBP, Correctness & Safety, Metrics & Insights), PYBP and Advanced analysis toggles, loading/error/empty states.
 - `spec/` – Vision, features, screens, tech, build plan; `pep8-change-detection.md`, `pybp-spec.txt` (PYBP extension); `must_have.md` lists open decisions for production.
 
 ## Security

@@ -9,9 +9,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.pep8_map import get_pep8_info
-from app.schemas import CheckResponse, Issue
+from app.schemas import CheckResponse, Issue, StaticAnalysisFinding
 from app.pybp.engine import run_pybp
 from app.pybp.checks import PYBP_RULES
+from app.analysis import (
+    run_types,
+    run_dataflow,
+    run_errors,
+    run_security,
+    run_metrics,
+    run_insights,
+)
 
 
 class CollectingReport(pycodestyle.BaseReport):
@@ -65,6 +73,7 @@ async def check_pep8(request: Request) -> CheckResponse:
             pep8_revision=settings.pep8_revision,
             issues=[],
             advisories=[],
+            findings=[],
             error=msg,
         )
     try:
@@ -76,12 +85,37 @@ async def check_pep8(request: Request) -> CheckResponse:
         return err_res("Missing or invalid 'code' field (must be a string).")
     if len(code.encode("utf-8")) > settings.max_code_length:
         return err_res(f"Code exceeds maximum length ({settings.max_code_length} bytes).")
-    issues = _run_pycodestyle(code)
-    pybp_enabled = body.get("pybp_enabled", settings.pybp_enabled_by_default)
-    if isinstance(pybp_enabled, bool) and pybp_enabled:
-        advisories = run_pybp(code, PYBP_RULES)
+    enable_pep8 = body.get("enable_pep8", settings.enable_pep8) if isinstance(body, dict) else settings.enable_pep8
+    enable_pybp = body.get("enable_pybp", body.get("pybp_enabled", settings.enable_pybp)) if isinstance(body, dict) else settings.enable_pybp
+    issues = _run_pycodestyle(code) if enable_pep8 else []
+    advisories = run_pybp(code, PYBP_RULES) if (isinstance(enable_pybp, bool) and enable_pybp) else []
+    findings: List[StaticAnalysisFinding] = []
+    if isinstance(body, dict):
+        enable_types = body.get("enable_types", settings.enable_types)
+        enable_dataflow = body.get("enable_dataflow", settings.enable_dataflow)
+        enable_errors = body.get("enable_errors", settings.enable_errors)
+        enable_security = body.get("enable_security", settings.enable_security)
+        enable_metrics = body.get("enable_metrics", settings.enable_metrics)
+        enable_insights = body.get("enable_insights", settings.enable_insights)
     else:
-        advisories = []
+        enable_types = settings.enable_types
+        enable_dataflow = settings.enable_dataflow
+        enable_errors = settings.enable_errors
+        enable_security = settings.enable_security
+        enable_metrics = settings.enable_metrics
+        enable_insights = settings.enable_insights
+    if enable_types:
+        findings.extend(run_types(code))
+    if enable_dataflow:
+        findings.extend(run_dataflow(code))
+    if enable_errors:
+        findings.extend(run_errors(code))
+    if enable_security:
+        findings.extend(run_security(code))
+    if enable_metrics:
+        findings.extend(run_metrics(code))
+    if enable_insights:
+        findings.extend(run_insights(code, findings))
     return CheckResponse(
         ok=True,
         pep8_date=settings.pep8_date,
@@ -89,6 +123,7 @@ async def check_pep8(request: Request) -> CheckResponse:
         pep8_revision=settings.pep8_revision,
         issues=issues,
         advisories=advisories,
+        findings=findings,
         error=None,
     )
 

@@ -23,6 +23,23 @@ export interface PybpAdvisory {
   severity: string;
 }
 
+export interface Location {
+  line: number;
+  column?: number | null;
+  function?: string | null;
+  class_name?: string | null;
+}
+
+export interface StaticAnalysisFinding {
+  domain: string;
+  rule_id: string;
+  title: string;
+  location: Location;
+  severity: string;
+  explanation: string;
+  suggestion: string;
+}
+
 export interface ApiResponse {
   ok: boolean;
   pep8_date: string;
@@ -30,16 +47,38 @@ export interface ApiResponse {
   pep8_revision: string;
   issues: Issue[];
   advisories: PybpAdvisory[];
+  findings: StaticAnalysisFinding[];
   error: string | null;
 }
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
-export async function checkApi(code: string, pybpEnabled = true): Promise<ApiResponse> {
+export interface CheckOptions {
+  pybpEnabled?: boolean;
+  advancedEnabled?: boolean;
+}
+
+export async function checkApi(
+  code: string,
+  pybpEnabled = true,
+  advancedEnabled = true,
+): Promise<ApiResponse> {
+  const body: Record<string, unknown> = {
+    code,
+    pybp_enabled: pybpEnabled,
+  };
+  if (!advancedEnabled) {
+    body.enable_types = false;
+    body.enable_dataflow = false;
+    body.enable_errors = false;
+    body.enable_security = false;
+    body.enable_metrics = false;
+    body.enable_insights = false;
+  }
   const res = await fetch(`${API_BASE}/api/check`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code, pybp_enabled: pybpEnabled }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);

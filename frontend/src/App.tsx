@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import CodeEditor from './CodeEditor';
 import ResultsPanel from './ResultsPanel';
-import { checkApi, type ApiResponse, type Issue, type PybpAdvisory } from './api';
+import { checkApi, type ApiResponse, type Issue, type PybpAdvisory, type StaticAnalysisFinding } from './api';
 
 const PEP8_URL = 'https://peps.python.org/pep-0008/';
 
@@ -13,7 +13,9 @@ export default function App() {
   const [pep8Revision, setPep8Revision] = useState<string | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [advisories, setAdvisories] = useState<PybpAdvisory[]>([]);
+  const [findings, setFindings] = useState<StaticAnalysisFinding[]>([]);
   const [pybpEnabled, setPybpEnabled] = useState(true);
+  const [advancedEnabled, setAdvancedEnabled] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
 
@@ -22,6 +24,7 @@ export default function App() {
     setStatus('idle');
     setIssues([]);
     setAdvisories([]);
+    setFindings([]);
     setErrorMessage(null);
     setSelectedLine(null);
   }, []);
@@ -31,8 +34,9 @@ export default function App() {
     setErrorMessage(null);
     setIssues([]);
     setAdvisories([]);
+    setFindings([]);
     try {
-      const res: ApiResponse = await checkApi(code, pybpEnabled);
+      const res: ApiResponse = await checkApi(code, pybpEnabled, advancedEnabled);
       setPep8Date(res.pep8_date ?? null);
       setPep8Url(res.pep8_url ?? null);
       setPep8Revision(res.pep8_revision ?? null);
@@ -43,12 +47,13 @@ export default function App() {
       }
       setIssues(res.issues ?? []);
       setAdvisories(res.advisories ?? []);
+      setFindings(res.findings ?? []);
       setStatus('success');
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : 'Network or server error');
       setStatus('error');
     }
-  }, [code, pybpEnabled]);
+  }, [code, pybpEnabled, advancedEnabled]);
 
   return (
     <div className="app">
@@ -81,6 +86,14 @@ export default function App() {
               />
               <span>Best Practice (PYBP) advisories</span>
             </label>
+            <label className="advanced-toggle">
+              <input
+                type="checkbox"
+                checked={advancedEnabled}
+                onChange={(e) => setAdvancedEnabled(e.target.checked)}
+              />
+              <span>Advanced analysis (types, dataflow, errors, security, metrics, insights)</span>
+            </label>
             <button
               type="button"
               className="check-btn"
@@ -99,7 +112,9 @@ export default function App() {
           status={status}
           issues={issues}
           advisories={advisories}
+          findings={findings}
           pybpEnabled={pybpEnabled}
+          advancedEnabled={advancedEnabled}
           errorMessage={errorMessage}
           pep8Date={pep8Date}
           onRetry={handleCheck}

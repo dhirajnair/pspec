@@ -1,12 +1,23 @@
-import type { Issue, PybpAdvisory } from './api';
+import type { Issue, PybpAdvisory, StaticAnalysisFinding } from './api';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
+
+const CORRECTNESS_DOMAINS = ['types', 'dataflow', 'errors', 'security'];
+const METRICS_DOMAINS = ['metrics', 'insights'];
+
+function findingsByDomain(findings: StaticAnalysisFinding[]) {
+  const correctness = findings.filter((f) => CORRECTNESS_DOMAINS.includes(f.domain));
+  const metrics = findings.filter((f) => METRICS_DOMAINS.includes(f.domain));
+  return { correctness, metrics };
+}
 
 interface ResultsPanelProps {
   status: Status;
   issues: Issue[];
   advisories: PybpAdvisory[];
+  findings: StaticAnalysisFinding[];
   pybpEnabled: boolean;
+  advancedEnabled: boolean;
   errorMessage: string | null;
   pep8Date: string | null;
   onRetry: () => void;
@@ -19,12 +30,15 @@ export default function ResultsPanel({
   status,
   issues,
   advisories,
+  findings,
   pybpEnabled,
+  advancedEnabled,
   errorMessage,
   pep8Date,
   onRetry,
   onSelectIssue,
 }: ResultsPanelProps) {
+  const { correctness, metrics } = findingsByDomain(findings);
   return (
     <aside className="results-pane" aria-live="polite">
       {status === 'idle' && (
@@ -115,6 +129,58 @@ export default function ResultsPanel({
                 </ul>
               )}
             </section>
+          )}
+
+          {advancedEnabled && (
+            <>
+              <section className="results-section results-correctness" aria-label="Correctness & Safety">
+                <h3 className="results-section-title results-correctness-title">🛡 Correctness & Safety</h3>
+                {correctness.length === 0 ? (
+                  <p className="no-findings">No type, data-flow, error, or security findings.</p>
+                ) : (
+                  <ul className="findings-list">
+                    {correctness.map((f, i) => (
+                      <li key={`${f.rule_id}-${f.location.line}-${i}`} className="finding-item finding-correctness">
+                        <button type="button" className="finding-trigger" onClick={() => onSelectIssue(f.location.line)}>
+                          <span className="finding-domain">{f.domain}</span>
+                          <span className="finding-severity">{f.severity}</span>
+                          <span className="finding-loc">Line {f.location.line}</span>
+                          <span className="finding-title">{f.title}</span>
+                        </button>
+                        <div className="finding-detail">
+                          <p className="finding-explanation">{f.explanation}</p>
+                          <p className="finding-suggestion"><strong>Suggestion:</strong> {f.suggestion}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              <section className="results-section results-metrics" aria-label="Metrics & Insights">
+                <h3 className="results-section-title results-metrics-title">📊 Metrics & Insights</h3>
+                {metrics.length === 0 ? (
+                  <p className="no-findings">No metrics or insight synthesis for this code.</p>
+                ) : (
+                  <ul className="findings-list">
+                    {metrics.map((f, i) => (
+                      <li key={`${f.rule_id}-${f.location.line}-${i}`} className="finding-item finding-metrics">
+                        <button type="button" className="finding-trigger" onClick={() => onSelectIssue(f.location.line)}>
+                          <span className="finding-domain">{f.domain}</span>
+                          <span className="finding-severity">{f.severity}</span>
+                          <span className="finding-loc">Line {f.location.line}</span>
+                          <span className="finding-title">{f.title}</span>
+                        </button>
+                        <div className="finding-detail">
+                          <p className="finding-explanation">{f.explanation}</p>
+                          <p className="finding-suggestion"><strong>Suggestion:</strong> {f.suggestion}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </>
           )}
         </>
       )}
