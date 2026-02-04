@@ -45,7 +45,7 @@ def run_metrics(source: str) -> List[StaticAnalysisFinding]:
         return []
     findings: List[StaticAnalysisFinding] = []
     for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             cyclo = _cyclomatic(node)
             depth = 0
             for n in ast.walk(node):

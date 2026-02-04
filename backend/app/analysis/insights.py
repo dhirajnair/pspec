@@ -1,6 +1,7 @@
 """Insight synthesis. Combine findings into high-level reviewer insights. Deterministic; never suppress."""
 from __future__ import annotations
 
+import re
 from typing import List
 
 from app.schemas import Location, StaticAnalysisFinding
@@ -29,16 +30,24 @@ def run_insights(
             )
         )
     metrics_findings = [f for f in findings_so_far if f.domain == "metrics"]
-    if metrics_findings and "nesting depth" in metrics_findings[0].explanation and "Cyclomatic" in metrics_findings[0].explanation:
-        insights.append(
-            StaticAnalysisFinding(
-                domain="insights",
-                rule_id="insights.complexity_context",
-                title="Complexity context",
-                location=Location(line=1),
-                severity="advisory",
-                explanation="Metrics indicate non-trivial complexity; function may have multiple responsibilities.",
-                suggestion="Consider splitting or simplifying; use metrics to prioritize review.",
+    for m in metrics_findings:
+        if "nesting depth" not in m.explanation or "Cyclomatic" not in m.explanation:
+            continue
+        cyclo_match = re.search(r"Cyclomatic complexity:\s*(\d+)", m.explanation)
+        depth_match = re.search(r"max nesting depth:\s*(\d+)", m.explanation)
+        cyclo = int(cyclo_match.group(1)) if cyclo_match else 0
+        depth = int(depth_match.group(1)) if depth_match else 0
+        if cyclo > 5 or depth > 2:
+            insights.append(
+                StaticAnalysisFinding(
+                    domain="insights",
+                    rule_id="insights.complexity_context",
+                    title="Complexity context",
+                    location=Location(line=1),
+                    severity="advisory",
+                    explanation="Metrics indicate non-trivial complexity; function may have multiple responsibilities.",
+                    suggestion="Consider splitting or simplifying; use metrics to prioritize review.",
+                )
             )
-        )
+            break
     return insights

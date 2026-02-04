@@ -40,6 +40,17 @@ App: http://localhost:5173
 
 The dev server proxies `/api` to the backend, so no extra env is needed for local run.
 
+### Running tests (backend)
+
+From `backend/` with the same conda env (or `pip install -r requirements.txt`):
+
+```bash
+cd backend
+PYTHONPATH=. pytest tests/ -v
+```
+
+Tests cover all analysis engines (types, dataflow, errors, security, metrics, insights) with edge cases, positive/negative samples, and API contract checks.
+
 ### Optional: Docker (backend only)
 
 ```bash
@@ -130,7 +141,7 @@ PYBP runs in parallel to PEP 8 on the same code: it produces **advisories only**
 
 - `backend/` – FastAPI + pycodestyle; `POST /api/check` (PEP 8, PYBP, and advanced static analysis); `app/pybp/` for PYBP; `app/analysis/` for type, dataflow, error, security, metrics, and insight engines; `scripts/detect_pep8_changes.py` for PEP 8 change detection.
 - `frontend/` – Vite + React; code editor (CodeMirror), results panel (PEP 8, PYBP, Correctness & Safety, Metrics & Insights), PYBP and Advanced analysis toggles, loading/error/empty states.
-- `spec/` – Vision, features, screens, tech, build plan; `pep8-change-detection.md`, `pybp-spec.txt` (PYBP extension); `must_have.md` lists open decisions for production.
+- `spec/` – Vision, features, screens, tech, build plan; `pep8-change-detection.md`, `pybp-spec.txt` (PYBP extension); `ui-test-snippets.md` (code samples for UI testing of advanced analysis); `must_have.md` lists open decisions for production.
 
 ## Security
 
