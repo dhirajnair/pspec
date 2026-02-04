@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     pep8_revision: str = "2021-11-01"  # Revision identifier (e.g. date or hash)
     # Comma-separated rule codes to suppress (e.g. E501 = max line length). Empty = none.
     pep8_ignore: str = ""
+    # PYBP: enable best-practice advisories by default (can override per request).
+    pybp_enabled_by_default: bool = True
 
     @property
     def cors_origins_list(self) -> List[str]:

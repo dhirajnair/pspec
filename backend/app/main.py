@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.pep8_map import get_pep8_info
 from app.schemas import CheckResponse, Issue
+from app.pybp.engine import run_pybp
+from app.pybp.checks import PYBP_RULES
 
 
 class CollectingReport(pycodestyle.BaseReport):
@@ -62,6 +64,7 @@ async def check_pep8(request: Request) -> CheckResponse:
             pep8_url=settings.pep8_url,
             pep8_revision=settings.pep8_revision,
             issues=[],
+            advisories=[],
             error=msg,
         )
     try:
@@ -74,12 +77,18 @@ async def check_pep8(request: Request) -> CheckResponse:
     if len(code.encode("utf-8")) > settings.max_code_length:
         return err_res(f"Code exceeds maximum length ({settings.max_code_length} bytes).")
     issues = _run_pycodestyle(code)
+    pybp_enabled = body.get("pybp_enabled", settings.pybp_enabled_by_default)
+    if isinstance(pybp_enabled, bool) and pybp_enabled:
+        advisories = run_pybp(code, PYBP_RULES)
+    else:
+        advisories = []
     return CheckResponse(
         ok=True,
         pep8_date=settings.pep8_date,
         pep8_url=settings.pep8_url,
         pep8_revision=settings.pep8_revision,
         issues=issues,
+        advisories=advisories,
         error=None,
     )
 

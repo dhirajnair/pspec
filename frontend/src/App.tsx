@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import CodeEditor from './CodeEditor';
 import ResultsPanel from './ResultsPanel';
-import { checkApi, type ApiResponse, type Issue } from './api';
+import { checkApi, type ApiResponse, type Issue, type PybpAdvisory } from './api';
 
 const PEP8_URL = 'https://peps.python.org/pep-0008/';
 
@@ -12,6 +12,8 @@ export default function App() {
   const [pep8Url, setPep8Url] = useState<string | null>(null);
   const [pep8Revision, setPep8Revision] = useState<string | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [advisories, setAdvisories] = useState<PybpAdvisory[]>([]);
+  const [pybpEnabled, setPybpEnabled] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
 
@@ -19,6 +21,7 @@ export default function App() {
     setCode('');
     setStatus('idle');
     setIssues([]);
+    setAdvisories([]);
     setErrorMessage(null);
     setSelectedLine(null);
   }, []);
@@ -27,8 +30,9 @@ export default function App() {
     setStatus('loading');
     setErrorMessage(null);
     setIssues([]);
+    setAdvisories([]);
     try {
-      const res: ApiResponse = await checkApi(code);
+      const res: ApiResponse = await checkApi(code, pybpEnabled);
       setPep8Date(res.pep8_date ?? null);
       setPep8Url(res.pep8_url ?? null);
       setPep8Revision(res.pep8_revision ?? null);
@@ -38,12 +42,13 @@ export default function App() {
         return;
       }
       setIssues(res.issues ?? []);
+      setAdvisories(res.advisories ?? []);
       setStatus('success');
     } catch (e) {
       setErrorMessage(e instanceof Error ? e.message : 'Network or server error');
       setStatus('error');
     }
-  }, [code]);
+  }, [code, pybpEnabled]);
 
   return (
     <div className="app">
@@ -68,6 +73,14 @@ export default function App() {
             highlightedLine={selectedLine}
           />
           <div className="editor-actions">
+            <label className="pybp-toggle">
+              <input
+                type="checkbox"
+                checked={pybpEnabled}
+                onChange={(e) => setPybpEnabled(e.target.checked)}
+              />
+              <span>Best Practice (PYBP) advisories</span>
+            </label>
             <button
               type="button"
               className="check-btn"
@@ -85,6 +98,8 @@ export default function App() {
         <ResultsPanel
           status={status}
           issues={issues}
+          advisories={advisories}
+          pybpEnabled={pybpEnabled}
           errorMessage={errorMessage}
           pep8Date={pep8Date}
           onRetry={handleCheck}

@@ -162,9 +162,126 @@ a:hover {
 .results-pane {
   display: flex;
   flex-direction: column;
+  gap: 1.25rem;
   padding: 1rem;
   background: var(--bg);
   overflow: auto;
+}
+
+.results-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.results-section-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.results-section .no-issues {
+  margin: 0;
+  color: var(--success);
+  font-weight: 500;
+}
+
+.results-pep8-title {
+  color: var(--success);
+}
+
+.results-pybp-title {
+  color: var(--accent-warn);
+}
+
+.no-advisories {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.advisory-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.advisory-item {
+  border: 1px solid var(--accent-warn);
+  border-radius: 6px;
+  background: rgba(194, 65, 12, 0.04);
+  overflow: hidden;
+}
+
+.advisory-trigger {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.advisory-trigger:hover {
+  background: rgba(194, 65, 12, 0.08);
+}
+
+.advisory-severity {
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--accent-warn);
+}
+
+.advisory-loc {
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--primary);
+}
+
+.advisory-title {
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.advisory-category {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.advisory-detail {
+  padding: 0 0.75rem 0.75rem;
+  border-top: 1px solid rgba(194, 65, 12, 0.2);
+  font-size: 0.8125rem;
+}
+
+.advisory-explanation {
+  margin: 0.5rem 0 0;
+  color: var(--text);
+}
+
+.advisory-authority,
+.advisory-suggestion {
+  margin: 0.5rem 0 0;
+  color: var(--text-muted);
+}
+
+.pybp-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.pybp-toggle input {
+  cursor: pointer;
 }
 
 .results-state {
