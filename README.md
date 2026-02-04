@@ -1,152 +1,203 @@
-# pspec — PEP 8 & Python Best Practices
+# pspec
 
-Web app to paste Python code and get **strict, spec-accurate PEP 8 validation** plus **Python Best Practices (PYBP)** advisories. No login; no execution of user code.
+**pspec** is a **snippet-centric static code analyzer for Python**. It evaluates a single Python code snippet in isolation and produces **review-grade feedback** across style, best practices, correctness, safety, and complexity — without requiring project context, dependencies, or execution.
 
-- **PEP 8**: Normative style checks (violations with citations and fixes).
-- **PYBP**: Advisory best-practice checks (maintainability, readability, error handling, etc.). Can be enabled or disabled independently.
+> pspec is designed for **code review, interviews, teaching, and quick quality checks**, not for whole-repository or CI-heavy workflows.
 
-## Run locally
+---
 
-### Prerequisites
+## Why pspec exists
 
-- **Node.js** 18+ (for frontend)
-- **Python** 3.10+ (for backend)
-- **Conda** (for backend env)
+Most Python linters and analyzers assume:
 
-### 1. Backend
+* a project layout
+* installed dependencies
+* import resolution
+* configuration files
 
-```bash
-cd backend
-conda create -n pspec python=3.10 -y
-conda activate pspec
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
+That makes them heavyweight and poorly suited for **snippets**.
 
-API: http://localhost:8000  
-Docs: http://localhost:8000/docs
+pspec takes a different approach:
 
-### 2. Frontend
+* 🔹 **One snippet in, one deterministic analysis out**
+* 🔹 No filesystem, no imports, no execution
+* 🔹 Clear separation between *spec*, *best practices*, and *engineering signals*
+* 🔹 Explanations a senior reviewer would give
 
-In a second terminal:
+---
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+## Core Principles
 
-App: http://localhost:5173  
+* **Snippet-centric by design** – analysis is limited strictly to the provided code
+* **Specification-driven** – PEP 8 is treated as law, not opinion
+* **Advisory best practices** – engineering judgment is clearly labeled
+* **Deterministic & auditable** – same input always yields the same output
+* **No auto-fixing** – pspec explains, it does not rewrite
 
-The dev server proxies `/api` to the backend, so no extra env is needed for local run.
+---
 
-### Running tests (backend)
+## What pspec analyzes
 
-From `backend/` with the same conda env (or `pip install -r requirements.txt`):
+pspec runs multiple **independent analysis engines** on the same snippet. Each engine produces its own findings and never alters the output of others.
 
-```bash
-cd backend
-PYTHONPATH=. pytest tests/ -v
-```
+### 1️⃣ PEP 8 Compliance (Normative)
 
-Tests cover all analysis engines (types, dataflow, errors, security, metrics, insights) with edge cases, positive/negative samples, and API contract checks.
+* Enforces **PEP 8 style rules** strictly
+* Reports:
 
-### Optional: Docker (backend only)
+  * what is wrong
+  * where it occurs
+  * how to fix it
+  * the **exact PEP 8 recommendation**, quoted and cited
 
-```bash
-docker compose up backend
-```
+PEP 8 is treated as a **versioned specification**, not a guideline.
 
-Then run the frontend locally: `cd frontend && npm install && npm run dev`. Ensure conda env `pspec` is active if running the backend on the host; frontend proxy targets `http://localhost:8000`.
+---
 
-### Optional: production build + single server
+### 2️⃣ PYBP – Python Best Practices (Advisory)
 
-```bash
-cd frontend && npm run build
-cd ../backend && conda activate pspec && uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
+Best-practice signals that affect maintainability and readability, including:
 
-Serve the `frontend/dist` folder at `/` (e.g. with a static middleware or reverse proxy). For local preview only:
+* Large or complex functions
+* Deep nesting
+* Long parameter lists
+* Overloaded classes or modules
+* Poor separation of concerns
 
-```bash
-cd frontend && npm run build && npm run preview
-```
+All PYBP findings are:
 
-Then point the preview URL to `VITE_API_URL=http://localhost:8000` if you run the API on 8000.
+* advisory only
+* explicitly cited
+* never treated as errors
 
-## Environment (backend)
+---
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CORS_ORIGINS` | `http://localhost:5173` | Comma-separated allowed origins |
-| `MAX_CODE_LENGTH` | `102400` | Max request body size for code (bytes) |
-| `PEP8_URL` | `https://peps.python.org/pep-0008/` | Official PEP 8 source URL |
-| `PEP8_DATE` | `2021-11-01` | Revision date shown in UI |
-| `PEP8_REVISION` | `2021-11-01` | Revision identifier in reports |
-| `PEP8_IGNORE` | (empty) | Comma-separated rules to suppress (e.g. `E501` = max line length) |
-| `PYBP_ENABLED_BY_DEFAULT` | `true` | When `true`, `/api/check` includes PYBP advisories unless the request sends `pybp_enabled: false`. |
+### 3️⃣ Type Semantics (Snippet-Local)
 
-## Environment (frontend)
+Lightweight type awareness without mypy or stubs:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VITE_API_URL` | `''` | API base URL (empty when using Vite proxy to backend) |
+* Missing type annotations (advisory)
+* Return type mismatches
+* Obvious incompatible operations
+* Unsafe use of `Optional` or `Any`
 
-## Detecting PEP 8 spec changes
+---
 
-From `backend/`, run:
+### 4️⃣ Data-Flow Analysis
 
-```bash
-python scripts/detect_pep8_changes.py
-```
+Tracks variable lifecycle within the snippet:
 
-The script fetches the official PEP 8 page, hashes each tracked section, and compares to `data/pep8_baseline.json`. If a section changed, it prints which section and which **rule codes** are affected (so you can update `app/pep8_map.py`). First time: run with `--accept` to create the baseline. After reviewing any reported change and updating the app, run again with `--accept` to refresh the baseline. Optionally run the script in CI (without `--accept`) to flag when PEP 8 has changed.
+* Use before assignment
+* Variable shadowing
+* Dead or unreachable code
+* Redundant assignments
 
-## Analysis engines
+---
 
-pspec runs several **independent** static analysis engines on your code. Output order is fixed: PEP 8 → PYBP → Correctness & Safety → Metrics & Insights. No engine alters or suppresses another’s results.
+### 5️⃣ Error & Exception Semantics
 
-| Engine | Purpose | Output |
-|--------|---------|--------|
-| **PEP 8** | Style and layout (normative). | Violations with code, line, PEP 8 quote, suggestion. |
-| **PYBP** | Best-practice advisories (function design, control flow, error handling, etc.). | Advisories with category, severity, authority, citation. |
-| **Type semantics** | Lightweight type awareness (no mypy). | Advisories for `Any` overuse, optional/return mismatches. |
-| **Data-flow** | Snippet-local variable lifecycles. | Advisories for shadowing, redundant assignment. |
-| **Error & exception** | Exception-handling patterns. | Warnings/advisories for bare except, silent catch, broad catch. |
-| **Security** | Basic security smells. | Advisories for `eval`/`exec`, pickle, shell execution, hardcoded credentials. |
-| **Metrics** | Complexity and size (report only). | Per-function cyclomatic complexity and nesting depth. |
-| **Insights** | Synthesis of other findings. | High-level advisories (e.g. elevated risk, complexity context). |
+Detects misleading or unsafe exception patterns:
 
-- **PEP 8** and **PYBP** can be toggled in the UI or via request body (`enable_pep8`, `pybp_enabled`).
-- **Advanced analysis** (types, dataflow, errors, security, metrics, insights) can be turned on/off together in the UI (“Advanced analysis” checkbox) or per engine via request body (`enable_types`, `enable_dataflow`, `enable_errors`, `enable_security`, `enable_metrics`, `enable_insights`). Backend defaults for all are `true`.
+* Bare or overly broad `except`
+* Exceptions caught and ignored
+* Control flow altered silently by exceptions
 
-## PYBP (Python Best Practices)
+---
 
-PYBP runs in parallel to PEP 8 on the same code: it produces **advisories only** (no errors), with severity `info`, `advisory`, or `warning`. Rules are cited (e.g. Clean Code, Python Docs, PEP 20).
+### 6️⃣ Security & Misuse Signals
 
-- **Enable/disable**: Use the “Best Practice (PYBP) advisories” checkbox in the UI, or send `pybp_enabled: true|false` in the `POST /api/check` body.
-- **Response**: `issues` = PEP 8 violations; `advisories` = PYBP findings (category, rule title, location, explanation, authority, citation, suggestion).
-- **Rules**: Each rule has full metadata (category, authority, citation, severity). Categories and examples:
-  - **Function Design**: excessive length, cyclomatic complexity, too many parameters, boolean flag arguments
-  - **Control Flow & Readability**: deep nesting, else after return
-  - **Data Structures & Idioms**: list built in loop with `.append()` (suggest comprehension)
-  - **Object-Oriented Design**: class with many methods (god-class signal)
-  - **Module & Package Structure**: overloaded module (too many top-level definitions)
-  - **Error Handling**: bare except, swallowing exceptions, overly broad catch
-  - **Performance & Scalability**: string concatenation in loop
-  - **Testability & Maintainability**: global state modification  
-  See `backend/app/pybp/checks.py` for the full rule set and citations.
+High-confidence, snippet-safe security advisories:
 
-## Project layout
+* `eval` / `exec`
+* Unsafe `pickle` usage
+* Shell execution without sanitization
+* Hard-coded secrets (pattern-based)
 
-- `backend/` – FastAPI + pycodestyle; `POST /api/check` (PEP 8, PYBP, and advanced static analysis); `app/pybp/` for PYBP; `app/analysis/` for type, dataflow, error, security, metrics, and insight engines; `scripts/detect_pep8_changes.py` for PEP 8 change detection.
-- `frontend/` – Vite + React; code editor (CodeMirror), results panel (PEP 8, PYBP, Correctness & Safety, Metrics & Insights), PYBP and Advanced analysis toggles, loading/error/empty states.
-- `spec/` – Vision, features, screens, tech, build plan; `pep8-change-detection.md`, `pybp-spec.txt` (PYBP extension); `ui-test-snippets.md` (code samples for UI testing of advanced analysis); `must_have.md` lists open decisions for production.
+All security findings are **signals**, not claims of vulnerability.
 
-## Security
+---
 
-- No execution of user code; static analysis only.
-- Request body size limited (see `MAX_CODE_LENGTH`).
-- CORS restricted to configured origins.
+### 7️⃣ Metrics & Complexity
 
-For production checklist (rate limits, CSP, etc.) see `spec/must_have.md`.
+Quantitative context for reviewers:
+
+* Cyclomatic complexity
+* Cognitive complexity
+* Nesting depth
+* Statement counts
+
+Metrics are reported, not enforced.
+
+---
+
+### 8️⃣ Insight Synthesis
+
+pspec correlates findings to produce **reviewer-level insights**, for example:
+
+> "This function is long, complex, and deeply nested — it likely has multiple responsibilities."
+
+Insights never suppress underlying findings and are fully traceable.
+
+---
+
+## What pspec intentionally does NOT do
+
+These are **explicit non-goals**:
+
+* ❌ Project-wide or multi-file analysis
+* ❌ Import or dependency resolution
+* ❌ Execution of user code
+* ❌ Full type checking or stub loading
+* ❌ CI, repo scanning, or filesystem access
+* ❌ Automatic code fixes
+
+This keeps pspec fast, predictable, and trustworthy for snippets.
+
+---
+
+## Typical Use Cases
+
+* Reviewing code snippets in PR comments
+* Python interviews and take-home evaluations
+* Teaching Python style and design
+* Validating examples for documentation or blogs
+* Quick "is this code good?" checks
+
+---
+
+## Output Characteristics
+
+* Findings grouped by analysis domain
+* Clear severity levels: violation, warning, advisory
+* Stable rule identifiers
+* Explicit engine and spec versioning
+
+pspec is suitable for both **human review** and **machine consumption**.
+
+---
+
+## Philosophy
+
+> **PEP 8 is law. Best practices are judgment. Metrics are context.**
+
+pspec exists to make those distinctions explicit.
+
+---
+
+## Status
+
+pspec is actively evolving, but its **core guarantees are stable**:
+
+* Snippet-centric analysis
+* Separation of authority
+* No silent behavior changes
+
+---
+
+## License
+
+MIT License
+
+---
+
+For **local setup, running the app, tests, and development**, see [DEVELOPMENT.md](DEVELOPMENT.md).
