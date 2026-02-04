@@ -77,11 +77,21 @@ Then point the preview URL to `VITE_API_URL=http://localhost:8000` if you run th
 |----------|---------|-------------|
 | `VITE_API_URL` | `''` | API base URL (empty when using Vite proxy to backend) |
 
+## Detecting PEP 8 spec changes
+
+From `backend/`, run:
+
+```bash
+python scripts/detect_pep8_changes.py
+```
+
+The script fetches the official PEP 8 page, hashes each tracked section, and compares to `data/pep8_baseline.json`. If a section changed, it prints which section and which **rule codes** are affected (so you can update `app/pep8_map.py`). First time: run with `--accept` to create the baseline. After reviewing any reported change and updating the app, run again with `--accept` to refresh the baseline. Optionally run the script in CI (without `--accept`) to flag when PEP 8 has changed.
+
 ## Project layout
 
-- `backend/` – FastAPI + pycodestyle; `POST /api/check` returns issues with PEP 8 quote/section/suggestion.
+- `backend/` – FastAPI + pycodestyle; `POST /api/check`; `scripts/detect_pep8_changes.py` for PEP 8 change detection.
 - `frontend/` – Vite + React; code editor (CodeMirror), results panel, loading/error/empty states.
-- `spec/` – Vision, features, screens, tech, build plan; `pep8-change-detection.md` (PEP 8 change-detection design); `must_have.md` lists open decisions for production.
+- `spec/` – Vision, features, screens, tech, build plan; `pep8-change-detection.md`; `must_have.md` lists open decisions for production.
 
 ## Security
 

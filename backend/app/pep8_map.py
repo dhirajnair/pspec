@@ -439,6 +439,21 @@ _RULE_MAP: Dict[str, Tuple[str, str, str]] = {
 PEP8_URL = "https://peps.python.org/pep-0008/"
 
 
+def get_section_fragment_to_codes() -> Dict[str, list]:
+    """Section URL fragment -> list of rule codes (for change-detection script)."""
+    out: Dict[str, list] = {}
+    for code, (_, section, _) in _RULE_MAP.items():
+        frag = _SECTION_FRAGMENTS.get(section)
+        if frag:
+            out.setdefault(frag, []).append(code)
+    return out
+
+
+def get_tracked_section_fragments() -> list:
+    """Section fragments we track for PEP 8 change detection (non-empty only)."""
+    return [f for f in _SECTION_FRAGMENTS.values() if f]
+
+
 def get_pep8_info(code: str, message: str) -> Tuple[str, str, str, Optional[str]]:
     """Return (pep8_quote, pep8_section, suggestion, pep8_section_url_fragment) for a pycodestyle code."""
     entry = _RULE_MAP.get(code)
