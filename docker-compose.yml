@@ -1,0 +1,12 @@
+# Optional: run backend only in Docker; run frontend locally with npm run dev
+# Usage: docker compose up backend
+# Then: cd frontend && npm install && npm run dev
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
