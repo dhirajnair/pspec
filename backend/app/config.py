@@ -21,10 +21,17 @@ class Settings(BaseSettings):
     pep8_url: str = "https://peps.python.org/pep-0008/"
     pep8_date: str = "2021-11-01"  # Revision date shown in UI
     pep8_revision: str = "2021-11-01"  # Revision identifier (e.g. date or hash)
+    # Comma-separated rule codes to suppress (e.g. E501 = max line length). Empty = none.
+    pep8_ignore: str = ""
 
     @property
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def pep8_ignore_list(self) -> List[str]:
+        """Rule codes to suppress (e.g. ['E501']). Pass to pycodestyle StyleGuide(ignore=...)."""
+        return [c.strip() for c in self.pep8_ignore.split(",") if c.strip()]
 
 
 @lru_cache

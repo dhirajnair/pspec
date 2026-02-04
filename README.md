@@ -69,6 +69,7 @@ Then point the preview URL to `VITE_API_URL=http://localhost:8000` if you run th
 | `PEP8_URL` | `https://peps.python.org/pep-0008/` | Official PEP 8 source URL |
 | `PEP8_DATE` | `2021-11-01` | Revision date shown in UI |
 | `PEP8_REVISION` | `2021-11-01` | Revision identifier in reports |
+| `PEP8_IGNORE` | (empty) | Comma-separated rules to suppress (e.g. `E501` = max line length) |
 
 ## Environment (frontend)
 

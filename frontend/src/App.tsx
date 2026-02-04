@@ -15,6 +15,14 @@ export default function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedLine, setSelectedLine] = useState<number | null>(null);
 
+  const handleClear = useCallback(() => {
+    setCode('');
+    setStatus('idle');
+    setIssues([]);
+    setErrorMessage(null);
+    setSelectedLine(null);
+  }, []);
+
   const handleCheck = useCallback(async () => {
     setStatus('loading');
     setErrorMessage(null);
@@ -59,14 +67,19 @@ export default function App() {
             placeholder="Paste or type Python code here"
             highlightedLine={selectedLine}
           />
-          <button
-            type="button"
-            className="check-btn"
-            onClick={handleCheck}
-            disabled={status === 'loading'}
-          >
-            {status === 'loading' ? 'Checking…' : 'Check PEP 8 Compliance'}
-          </button>
+          <div className="editor-actions">
+            <button
+              type="button"
+              className="check-btn"
+              onClick={handleCheck}
+              disabled={status === 'loading'}
+            >
+              {status === 'loading' ? 'Checking…' : 'Check PEP 8 Compliance'}
+            </button>
+            <button type="button" className="clear-btn" onClick={handleClear}>
+              Clear
+            </button>
+          </div>
         </section>
 
         <ResultsPanel

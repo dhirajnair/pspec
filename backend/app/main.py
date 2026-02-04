@@ -89,7 +89,11 @@ def _run_pycodestyle(source: str) -> List[Issue]:
     lines = source.splitlines(keepends=True)
     if not lines:
         return []
-    style = pycodestyle.StyleGuide(quiet=True)
+    # Merge pycodestyle default ignore with config (so we add suppressions, not replace).
+    default_ignore = getattr(pycodestyle, "DEFAULT_IGNORE", "") or ""
+    base_list = [c.strip() for c in default_ignore.split(",") if c.strip()]
+    ignore_list = base_list + settings.pep8_ignore_list
+    style = pycodestyle.StyleGuide(quiet=True, ignore=ignore_list)
     report = CollectingReport(style.options)
     checker = pycodestyle.Checker(
         lines=lines,
